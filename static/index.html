@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scopeo — Inteligência em Gestão de Escopo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              950: '#063B2B',
+              900: '#064B35',
+              700: '#167653',
+              100: '#E4F0EA',
+              50: '#F2F7F4'
+            },
+            canvas: '#F2F3F1',
+            ink: '#202522',
+            muted: '#858D88'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Manrope', 'Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #F2F3F1; color: #202522; font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .font-display { font-family: 'Manrope', 'Inter', sans-serif; }
+    .card { background: #FFFFFF; border: 1px solid #E6E9E6; border-radius: 16px; box-shadow: 0 1px 3px rgba(6, 59, 43, 0.03); }
+    .nav-active { background-color: #E4F0EA !important; color: #064B35 !important; font-weight: 600; }
+    .nav-active i, .nav-active svg { color: #064B35 !important; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #CFD6D1; border-radius: 999px; }
+  </style>
+</head>
+<body class="min-h-screen flex antialiased">
+
+  <!-- SIDEBAR VERTICAL FIXA -->
+  <aside class="w-64 bg-white border-r border-[#E6E9E6] fixed inset-y-0 left-0 z-30 flex flex-col justify-between px-4 py-6 hidden lg:flex">
+    <div>
+      <!-- Brand Scopeo -->
+      <div class="flex items-center gap-3 px-2 mb-8">
+        <div class="w-9 h-9 rounded-xl bg-forest-900 flex items-center justify-center shadow-sm">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/>
+            <circle cx="12" cy="12" r="3" fill="#E4F0EA" stroke="none"/>
+          </svg>
+        </div>
+        <div>
+          <span class="font-display font-extrabold text-xl tracking-tight text-ink block leading-none">Scopeo</span>
+          <span class="text-[11px] text-muted font-medium">Scope Intelligence</span>
+        </div>
+      </div>
+
+      <!-- Navegação Principal -->
+      <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">Plataforma</p>
+      <nav class="space-y-1">
+        <button onclick="navigate('dashboard')" id="nav-dashboard" class="nav-item nav-active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 text-muted"></i> Dashboard
+        </button>
+        <button onclick="navigate('projects')" id="nav-projects" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <i data-lucide="folder-kanban" class="w-4 h-4 text-muted"></i> Projetos
+        </button>
+        <button onclick="navigate('requests')" id="nav-requests" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <i data-lucide="sparkles" class="w-4 h-4 text-muted"></i> Solicitações
+        </button>
+        <button onclick="navigate('audits')" id="nav-audits" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <i data-lucide="file-scan" class="w-4 h-4 text-muted"></i> Auditorias
+        </button>
+        <button onclick="navigate('contract')" id="nav-contract" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <i data-lucide="scale" class="w-4 h-4 text-muted"></i> Análise Contratual
+        </button>
+        <button onclick="navigate('financial')" id="nav-financial" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <i data-lucide="circle-dollar-sign" class="w-4 h-4 text-muted"></i> Impacto Financeiro
+        </button>
+        <button onclick="navigate('approvals')" id="nav-approvals" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <span class="flex items-center gap-3"><i data-lucide="check-check" class="w-4 h-4 text-muted"></i> Aprovações</span>
+          <span id="sidebarPendingBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 hidden">0</span>
+        </button>
+        <button onclick="navigate('insights')" id="nav-insights" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-ink/80 hover:bg-forest-50 transition">
+          <i data-lucide="brain-circuit" class="w-4 h-4 text-muted"></i> Insights da IA
+        </button>
+      </nav>
+    </div>
+
+    <!-- Rodapé da Sidebar -->
+    <div class="pt-4 border-t border-[#E6E9E6] space-y-1">
+      <button onclick="openModal('modal-settings')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-ink/75 hover:bg-forest-50 transition">
+        <i data-lucide="settings" class="w-4 h-4 text-muted"></i> Configurações
+      </button>
+      <button onclick="openModal('modal-help')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-ink/75 hover:bg-forest-50 transition">
+        <i data-lucide="help-circle" class="w-4 h-4 text-muted"></i> Ajuda
+      </button>
+      <div class="mt-3 pt-3 border-t border-[#E6E9E6] flex items-center gap-3 px-2">
+        <div class="w-9 h-9 rounded-full bg-forest-900 text-white font-semibold text-xs flex items-center justify-center">FL</div>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-ink truncate">Flávio</p>
+          <p class="text-xs text-muted truncate">Gestão de Projetos</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ÁREA PRINCIPAL -->
+  <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
+
+    <!-- HEADER SUPERIOR -->
+    <header class="sticky top-0 z-20 bg-canvas/90 backdrop-blur-md border-b border-[#E4E7E4] px-6 lg:px-10 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <p id="greetingText" class="text-xs font-medium text-muted">Olá, Flávio</p>
+        <p id="headerBreadcrumb" class="text-sm font-semibold text-ink">Visão Geral da Carteira</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Seletor Global de Projeto -->
+        <div class="flex items-center gap-2 bg-white border border-[#E2E6E2] rounded-xl px-3 py-1.5">
+          <i data-lucide="briefcase" class="w-4 h-4 text-forest-900"></i>
+          <select id="globalProjectSelector" onchange="onGlobalProjectChange(this.value)" class="text-sm font-medium text-ink bg-transparent focus:outline-none pr-2 max-w-[230px]">
+            <option value="">Todos os projetos</option>
+          </select>
+        </div>
+
+        <!-- Notificações -->
+        <div class="relative">
+          <button onclick="toggleNotifications()" class="w-10 h-10 rounded-xl bg-white border border-[#E2E6E2] flex items-center justify-center text-ink hover:bg-forest-50 transition relative">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            <span id="notifDot" class="w-2 h-2 rounded-full bg-red-500 absolute top-2.5 right-2.5"></span>
+          </button>
+          <div id="notifPopover" class="hidden absolute right-0 mt-2 w-80 card p-4 z-40 shadow-lg">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-muted">Alertas de Escopo</span>
+              <span class="text-[11px] text-forest-700 font-semibold">Tempo real</span>
+            </div>
+            <div id="notifList" class="space-y-2.5 text-xs"></div>
+          </div>
+        </div>
+
+        <!-- Avatar Header -->
+        <div class="hidden sm:flex items-center gap-2.5 pl-2 border-l border-[#DDE2DD]">
+          <div class="w-9 h-9 rounded-full bg-forest-100 text-forest-900 font-bold text-xs flex items-center justify-center border border-forest-900/10">FL</div>
+          <div class="leading-tight">
+            <p class="text-xs font-semibold text-ink">Flávio</p>
+            <p class="text-[11px] text-muted">Admin</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTEÚDO DAS PÁGINAS -->
+    <main class="flex-1 px-6 lg:px-10 py-8 max-w-[1360px] w-full mx-auto">
+
+      <!-- 1. DASHBOARD GERAL -->
+      <section id="view-dashboard" class="page-view space-y-8">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-ink">Visão Geral</h1>
+            <p class="text-sm text-muted mt-1">Acompanhe seus projetos, identifique desvios e mantenha o controle sobre o escopo contratado.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="navigate('audits')" class="px-4 py-2.5 rounded-xl bg-white border border-[#DCE1DC] text-sm font-semibold text-ink hover:bg-forest-50 transition flex items-center gap-2">
+              <i data-lucide="upload" class="w-4 h-4 text-forest-900"></i> Auditar Ata
+            </button>
+            <button onclick="openModal('modal-new-project')" class="px-4 py-2.5 rounded-xl bg-forest-900 hover:bg-forest-950 text-white text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+              <i data-lucide="plus" class="w-4 h-4"></i> Novo Projeto
+            </button>
+          </div>
+        </div>
+
+        <!-- 5 Indicadores Principais -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+          <div class="card p-5 bg-forest-900 text-white border-forest-900">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-forest-100/80">Projetos Ativos</span>
+              <i data-lucide="folder-kanban" class="w-4 h-4 text-forest-100"></i>
+            </div>
+            <p id="ovActive" class="text-3xl font-extrabold font-display mt-3">0</p>
+            <p class="text-xs text-forest-100/75 mt-1">Carteira monitorada</p>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-muted">Com Risco de Desvio</span>
+              <span class="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i></span>
+            </div>
+            <p id="ovRisk" class="text-3xl font-extrabold font-display text-ink mt-3">0</p>
+            <p class="text-xs text-red-600 mt-1 font-medium">Atenção prioritária</p>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-muted">Solicitações via IA</span>
+              <span class="w-7 h-7 rounded-lg bg-forest-100 text-forest-900 flex items-center justify-center"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i></span>
+            </div>
+            <p id="ovAiReq" class="text-3xl font-extrabold font-display text-ink mt-3">0</p>
+            <p class="text-xs text-muted mt-1">Além do escopo base</p>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-muted">Impacto Acumulado</span>
+              <span class="w-7 h-7 rounded-lg bg-forest-100 text-forest-900 flex items-center justify-center"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i></span>
+            </div>
+            <p id="ovImpact" class="text-2xl font-extrabold font-display text-forest-900 mt-3">R$ 0</p>
+            <p class="text-xs text-forest-700 mt-1 font-medium">Potencial de aditivo</p>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-muted">Aguardando Aprovação</span>
+              <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center"><i data-lucide="clock" class="w-3.5 h-3.5"></i></span>
+            </div>
+            <p id="ovPending" class="text-3xl font-extrabold font-display text-ink mt-3">0</p>
+            <p class="text-xs text-amber-700 mt-1 font-medium">Pendentes de decisão</p>
+          </div>
+        </div>
+
+        <!-- Gráfico + Últimas Atividades -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 card p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h2 class="text-base font-bold text-ink">Evolução do impacto financeiro</h2>
+                <p class="text-xs text-muted">Custos adicionais identificados pela IA ao longo dos meses</p>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-forest-100 text-forest-900">Consolidado 2026</span>
+            </div>
+            <div class="h-64"><canvas id="overviewEvolutionChart"></canvas></div>
+          </div>
+
+          <div class="card p-6 flex flex-col">
+            <h2 class="text-base font-bold text-ink mb-1">Últimas atividades</h2>
+            <p class="text-xs text-muted mb-5">Auditorias e alertas recentes da IA</p>
+            <div id="overviewActivities" class="space-y-3.5 overflow-y-auto max-h-64 pr-1"></div>
+          </div>
+        </div>
+
+        <!-- Projetos que precisam de atenção -->
+        <div class="card overflow-hidden">
+          <div class="p-6 pb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-ink">Projetos que precisam de atenção</h2>
+              <p class="text-xs text-muted">Clique em qualquer projeto para abrir o dashboard individual completo</p>
+            </div>
+            <button onclick="navigate('projects')" class="text-xs font-semibold text-forest-900 hover:underline">Ver todos</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-y border-[#ECEFEC] bg-forest-50/50 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <th class="py-3 px-6">Projeto</th>
+                  <th class="py-3 px-4">Cliente</th>
+                  <th class="py-3 px-4">Orçamento</th>
+                  <th class="py-3 px-4">Custo Adicional</th>
+                  <th class="py-3 px-4">Fora do Escopo</th>
+                  <th class="py-3 px-4">Índice SDI</th>
+                  <th class="py-3 px-6 text-right">Risco</th>
+                </tr>
+              </thead>
+              <tbody id="overviewAttentionTable" class="divide-y divide-[#F0F2F0] text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. PROJETOS -->
+      <section id="view-projects" class="page-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-ink">Projetos</h1>
+            <p class="text-sm text-muted mt-1">Gerencie contratos ativos e acesse o painel individual de inteligência de cada projeto.</p>
+          </div>
+          <button onclick="openModal('modal-new-project')" class="px-5 py-2.5 rounded-xl bg-forest-900 hover:bg-forest-950 text-white text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i> Novo Projeto
+          </button>
+        </div>
+        <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+      </section>
+
+      <!-- 3. DASHBOARD INDIVIDUAL DO PROJETO -->
+      <section id="view-project-detail" class="page-view hidden space-y-7">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <button onclick="navigate('projects')" class="text-xs font-semibold text-forest-700 hover:underline flex items-center gap-1 mb-1.5">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Voltar para Projetos
+            </button>
+            <div class="flex items-center gap-3 flex-wrap">
+              <h1 id="pdName" class="text-2xl lg:text-3xl font-extrabold text-ink">Projeto</h1>
+              <span id="pdRiskBadge"></span>
+            </div>
+            <p id="pdSubtitle" class="text-sm text-muted mt-1"></p>
+          </div>
+          <div class="flex flex-wrap gap-2.5">
+            <button onclick="navigate('contract')" class="px-4 py-2 rounded-xl bg-white border border-[#DCE1DC] text-xs font-semibold text-ink hover:bg-forest-50">Matriz Contratual</button>
+            <button onclick="navigate('financial')" class="px-4 py-2 rounded-xl bg-white border border-[#DCE1DC] text-xs font-semibold text-ink hover:bg-forest-50">Impacto Financeiro</button>
+            <button onclick="navigate('audits')" class="px-4 py-2 rounded-xl bg-forest-900 text-white text-xs font-semibold hover:bg-forest-950 flex items-center gap-1.5">
+              <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Nova Auditoria
+            </button>
+          </div>
+        </div>
+
+        <!-- 7 KPIs do Projeto -->
+        <!-- 7 KPIs do Projeto -->
+        <div class="space-y-3.5">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div class="card p-5"><p class="text-xs text-muted font-medium">Valor Original</p><p id="pdOriginal" class="text-2xl font-extrabold text-ink mt-1.5 whitespace-nowrap">R$ 0</p></div>
+            <div class="card p-5"><p class="text-xs text-muted font-medium">Custo Adicional</p><p id="pdExtra" class="text-2xl font-extrabold text-red-600 mt-1.5 whitespace-nowrap">R$ 0</p></div>
+            <div class="card p-5 bg-forest-900 text-white border-forest-900"><p class="text-xs text-forest-100/80 font-medium">Novo Custo Estimado</p><p id="pdNewTotal" class="text-2xl font-extrabold mt-1.5 whitespace-nowrap">R$ 0</p></div>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div class="card p-4"><p class="text-xs text-muted font-medium">Total Solicitações</p><p id="pdTotalReq" class="text-xl font-extrabold text-ink mt-1">0</p></div>
+            <div class="card p-4"><p class="text-xs text-muted font-medium">Fora do Escopo</p><p id="pdOutReq" class="text-xl font-extrabold text-red-600 mt-1">0</p></div>
+            <div class="card p-4"><p class="text-xs text-muted font-medium">Pendentes</p><p id="pdPendingReq" class="text-xl font-extrabold text-amber-600 mt-1">0</p></div>
+            <div class="card p-4"><p class="text-xs text-muted font-medium">Horas Adicionais</p><p id="pdHours" class="text-xl font-extrabold text-forest-900 mt-1">0h</p></div>
+          </div>
+        </div>
+
+        <!-- SDI Exclusivo + Alertas Inteligentes -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Scope Deviation Index (SDI) -->
+          <div class="lg:col-span-5 card p-6 flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2 mb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-base font-bold text-ink">Scope Deviation Index (SDI)</h2>
+                  <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-forest-100 text-forest-900">Configurável</span>
+                </div>
+                <p class="text-xs text-muted mt-0.5">Indicador proprietário de desvio frente ao contrato base</p>
+              </div>
+              <button onclick="openModal('modal-settings')" class="text-xs font-semibold text-forest-700 hover:underline">Calibrar</button>
+            </div>
+
+            <div class="flex items-center gap-6 my-3">
+              <div class="relative w-32 h-32 shrink-0">
+                <svg class="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#E8ECE9" stroke-width="11"/>
+                  <circle id="sdiCircle" cx="60" cy="60" r="50" fill="none" stroke="#064B35" stroke-width="11" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" class="transition-all duration-700"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span id="sdiScoreValue" class="text-3xl font-extrabold font-display text-ink">0</span>
+                  <span class="text-[10px] font-semibold uppercase text-muted">de 100</span>
+                </div>
+              </div>
+              <div class="flex-1 space-y-2.5 text-xs">
+                <div>
+                  <div class="flex justify-between mb-1"><span class="text-muted">Fora do escopo</span><span id="sdiOutPct" class="font-semibold text-ink">0%</span></div>
+                  <div class="w-full h-1.5 rounded-full bg-canvas overflow-hidden"><div id="sdiBarOut" class="h-full bg-forest-900 rounded-full" style="width:0%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between mb-1"><span class="text-muted">Impacto financeiro</span><span id="sdiFinPct" class="font-semibold text-ink">0%</span></div>
+                  <div class="w-full h-1.5 rounded-full bg-canvas overflow-hidden"><div id="sdiBarFin" class="h-full bg-forest-700 rounded-full" style="width:0%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between mb-1"><span class="text-muted">Horas extras / base</span><span id="sdiHrsPct" class="font-semibold text-ink">0%</span></div>
+                  <div class="w-full h-1.5 rounded-full bg-canvas overflow-hidden"><div id="sdiBarHrs" class="h-full bg-amber-500 rounded-full" style="width:0%"></div></div>
+                </div>
+                <div class="flex justify-between pt-1 border-t border-[#F0F2F0]">
+                  <span class="text-muted">Não formalizadas</span>
+                  <span id="sdiUnformalized" class="font-bold text-red-600">0 itens</span>
+                </div>
+              </div>
+            </div>
+            <p class="text-[11px] text-muted bg-canvas rounded-xl p-2.5 mt-2">Métrica parametrizável: os pesos entre custo, horas e volume de mudanças podem ser ajustados em <strong>Configurações</strong>.</p>
+          </div>
+
+          <!-- Alertas Inteligentes da IA -->
+          <div class="lg:col-span-7 card p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-base font-bold text-ink">Alertas Inteligentes da IA</h2>
+                <p class="text-xs text-muted">Diagnóstico contínuo de riscos financeiros, operacionais e de prazo</p>
+              </div>
+              <span class="text-xs font-semibold text-forest-900 bg-forest-100 px-2.5 py-1 rounded-full">Monitoramento Ativo</span>
+            </div>
+            <div id="pdAlertsList" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- Solicitações do Projeto -->
+        <div class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-ink">Solicitações identificadas neste projeto</h2>
+            <button onclick="navigate('contract')" class="text-xs font-semibold text-forest-900 hover:underline">Abrir Matriz Comparativa</button>
+          </div>
+          <div id="pdItemsList" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- 4. ANÁLISE CONTRATUAL — MATRIZ DE ESCOPO -->
+      <section id="view-contract" class="page-view hidden space-y-7">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-ink">Análise Contratual</h1>
+            <p class="text-sm text-muted mt-1">Extração inteligente do contrato original e matriz comparativa "Contratado vs. Solicitado".</p>
+          </div>
+          <div class="flex items-center gap-2 bg-white border border-[#DCE1DC] rounded-xl px-3.5 py-2">
+            <span class="text-xs text-muted">Contrato:</span>
+            <span id="contractFilenameBadge" class="text-xs font-bold text-forest-900">Contrato.pdf</span>
+          </div>
+        </div>
+
+        <!-- Extração do Contrato -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="card p-5"><p class="text-xs font-bold uppercase tracking-wider text-forest-900 mb-2">Objetivos do Projeto</p><p id="cObjectives" class="text-sm text-ink/85 leading-relaxed"></p></div>
+          <div class="card p-5"><p class="text-xs font-bold uppercase tracking-wider text-forest-900 mb-2">Entregáveis Contratados</p><pre id="cDeliverables" class="text-sm text-ink/85 whitespace-pre-wrap font-sans leading-relaxed"></pre></div>
+          <div class="card p-5"><p class="text-xs font-bold uppercase tracking-wider text-forest-900 mb-2">Funcionalidades Previstas</p><pre id="cIncluded" class="text-sm text-ink/85 whitespace-pre-wrap font-sans leading-relaxed"></pre></div>
+          <div class="card p-5 border-red-100"><p class="text-xs font-bold uppercase tracking-wider text-red-700 mb-2">Limitações Contratuais (Exclusões)</p><pre id="cExcluded" class="text-sm text-ink/85 whitespace-pre-wrap font-sans leading-relaxed"></pre></div>
+          <div class="card p-5"><p class="text-xs font-bold uppercase tracking-wider text-forest-900 mb-2">Prazos Acordados</p><p id="cDeadlines" class="text-sm text-ink/85 leading-relaxed"></p></div>
+          <div class="card p-5"><p class="text-xs font-bold uppercase tracking-wider text-forest-900 mb-2">Valores e Condições Financeiras</p><p id="cPayment" class="text-sm text-ink/85 leading-relaxed"></p></div>
+        </div>
+
+        <!-- Matriz Contratado vs Solicitado -->
+        <div class="card overflow-hidden">
+          <div class="p-6 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-base font-bold text-ink">Matriz Comparativa: Contratado vs. Solicitado</h2>
+              <p class="text-xs text-muted">Clique em qualquer linha para inspecionar os trechos literais do contrato e da transcrição</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-y border-[#ECEFEC] bg-forest-50/50 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <th class="py-3 px-6">Item Contratado</th>
+                  <th class="py-3 px-4">Nova Solicitação</th>
+                  <th class="py-3 px-4">Trecho do Contrato</th>
+                  <th class="py-3 px-4">Classificação IA</th>
+                  <th class="py-3 px-6">Justificativa</th>
+                </tr>
+              </thead>
+              <tbody id="contractMatrixBody" class="divide-y divide-[#F0F2F0] text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. SOLICITAÇÕES IDENTIFICADAS PELA IA -->
+      <section id="view-requests" class="page-view hidden space-y-6">
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-tight text-ink">Solicitações</h1>
+          <p class="text-sm text-muted mt-1">Central consolidada de todos os pedidos identificados automaticamente nas atas e transcrições.</p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card p-4 flex flex-wrap items-center gap-3">
+          <div class="flex-1 min-w-[200px] relative">
+            <i data-lucide="search" class="w-4 h-4 text-muted absolute left-3 top-2.5"></i>
+            <input id="reqSearch" oninput="renderRequestsTable()" type="text" placeholder="Buscar por descrição ou cliente..." class="w-full pl-9 pr-3 py-2 text-sm bg-canvas border border-[#E2E6E2] rounded-xl focus:outline-none focus:border-forest-900" />
+          </div>
+          <select id="reqFilterClass" onchange="renderRequestsTable()" class="text-sm bg-canvas border border-[#E2E6E2] rounded-xl px-3 py-2 focus:outline-none">
+            <option value="">Todas classificações</option>
+            <option value="FORA_DO_ESCOPO">Fora do escopo</option>
+            <option value="ALTERACAO_DE_ESCOPO">Alteração de escopo</option>
+            <option value="DENTRO_DO_ESCOPO">Dentro do escopo</option>
+          </select>
+          <select id="reqFilterApproval" onchange="renderRequestsTable()" class="text-sm bg-canvas border border-[#E2E6E2] rounded-xl px-3 py-2 focus:outline-none">
+            <option value="">Todos status</option>
+            <option value="AGUARDANDO">Aguardando aprovação</option>
+            <option value="EM_REVISAO">Em revisão</option>
+            <option value="APROVADA">Aprovada</option>
+            <option value="RECUSADA">Recusada</option>
+          </select>
+        </div>
+
+        <div class="card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-[#ECEFEC] bg-forest-50/50 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <th class="py-3 px-6">Solicitação / Origem</th>
+                  <th class="py-3 px-4">Projeto</th>
+                  <th class="py-3 px-4">Classificação</th>
+                  <th class="py-3 px-4">Esforço & Custo</th>
+                  <th class="py-3 px-4">Confiança IA</th>
+                  <th class="py-3 px-6 text-right">Aprovação</th>
+                </tr>
+              </thead>
+              <tbody id="requestsTableBody" class="divide-y divide-[#F0F2F0] text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. AUDITORIAS E DOCUMENTOS -->
+      <section id="view-audits" class="page-view hidden space-y-7">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-ink">Auditorias</h1>
+            <p class="text-sm text-muted mt-1">Faça upload de atas ou transcrições para a IA auditar contra o contrato e calcular impactos.</p>
+          </div>
+          <button onclick="fillDemoAudit()" class="px-4 py-2 rounded-xl bg-forest-100 hover:bg-forest-100/80 text-forest-900 text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="wand-2" class="w-4 h-4"></i> Carregar Ata de Demonstração
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Área de Upload e Input -->
+          <div class="lg:col-span-7 card p-6 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-muted mb-1.5">Projeto a Auditar</label>
+                <select id="auditProjectId" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:border-forest-900"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-muted mb-1.5">Origem do Documento</label>
+                <select id="auditSourceType" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:border-forest-900">
+                  <option value="Transcrição">Transcrição de Reunião</option>
+                  <option value="Ata">Ata Formal</option>
+                  <option value="Comunicação">E-mail / WhatsApp</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-muted mb-1.5">Título da Reunião ou Documento</label>
+              <input id="auditTitle" type="text" placeholder="Ex: Reunião de Alinhamento — Sprint 4" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-forest-900" />
+            </div>
+
+            <!-- Dropzone Moderna -->
+            <label id="auditDropzone" class="block border-2 border-dashed border-[#C7D3CC] hover:border-forest-900 bg-forest-50/40 rounded-2xl p-6 text-center cursor-pointer transition">
+              <input id="auditFileInput" type="file" accept=".pdf,.txt,.md" class="hidden" onchange="onAuditFileSelected(this)" />
+              <div class="w-11 h-11 rounded-xl bg-white border border-[#E2E6E2] mx-auto flex items-center justify-center text-forest-900 mb-2.5">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+              </div>
+              <p id="auditDropLabel" class="text-sm font-semibold text-ink">Arraste um PDF/TXT ou clique para enviar</p>
+              <p class="text-xs text-muted mt-0.5">Suporta atas em PDF, transcrições do Meet/Zoom (.txt) ou colagem direta abaixo</p>
+            </label>
+
+            <div>
+              <label class="block text-xs font-semibold text-muted mb-1.5">Ou cole o texto da reunião diretamente</label>
+              <textarea id="auditTranscript" rows="4" placeholder="Cole os pedidos do cliente ou trechos da reunião..." class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-forest-900"></textarea>
+            </div>
+
+            <div id="auditErrorBox" class="hidden text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl p-3"></div>
+
+            <button id="auditSubmitBtn" onclick="executeAudit()" class="w-full py-3 rounded-xl bg-forest-900 hover:bg-forest-950 text-white text-sm font-semibold transition flex items-center justify-center gap-2 shadow-sm">
+              <i data-lucide="cpu" class="w-4 h-4"></i> Iniciar Auditoria Inteligente
+            </button>
+          </div>
+
+          <!-- Pipeline Visual de 6 Etapas -->
+          <div class="lg:col-span-5 card p-6 flex flex-col justify-between">
+            <div>
+              <h2 class="text-base font-bold text-ink">Pipeline de Processamento IA</h2>
+              <p class="text-xs text-muted mt-0.5 mb-6">Acompanhamento em tempo real da auditoria contratual</p>
+              <ol id="auditPipelineSteps" class="space-y-4">
+                <li data-step="1" class="pipeline-step flex items-center gap-3 text-sm text-muted"><span class="step-dot w-7 h-7 rounded-full border border-[#D4DCD7] flex items-center justify-center text-xs font-bold">1</span> Documento recebido</li>
+                <li data-step="2" class="pipeline-step flex items-center gap-3 text-sm text-muted"><span class="step-dot w-7 h-7 rounded-full border border-[#D4DCD7] flex items-center justify-center text-xs font-bold">2</span> Extração do conteúdo</li>
+                <li data-step="3" class="pipeline-step flex items-center gap-3 text-sm text-muted"><span class="step-dot w-7 h-7 rounded-full border border-[#D4DCD7] flex items-center justify-center text-xs font-bold">3</span> Identificação de solicitações</li>
+                <li data-step="4" class="pipeline-step flex items-center gap-3 text-sm text-muted"><span class="step-dot w-7 h-7 rounded-full border border-[#D4DCD7] flex items-center justify-center text-xs font-bold">4</span> Comparação com o contrato</li>
+                <li data-step="5" class="pipeline-step flex items-center gap-3 text-sm text-muted"><span class="step-dot w-7 h-7 rounded-full border border-[#D4DCD7] flex items-center justify-center text-xs font-bold">5</span> Análise de impacto financeiro</li>
+                <li data-step="6" class="pipeline-step flex items-center gap-3 text-sm text-muted"><span class="step-dot w-7 h-7 rounded-full border border-[#D4DCD7] flex items-center justify-center text-xs font-bold">6</span> Relatório concluído</li>
+              </ol>
+            </div>
+            <div id="auditResultSummary" class="hidden mt-6 p-4 rounded-xl bg-forest-50 border border-forest-100 space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Histórico de Auditorias -->
+        <div class="card overflow-hidden">
+          <div class="p-6 pb-4">
+            <h2 class="text-base font-bold text-ink">Histórico de Auditorias Anteriores</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-y border-[#ECEFEC] bg-forest-50/50 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <th class="py-3 px-6">Data</th>
+                  <th class="py-3 px-4">Documento / Reunião</th>
+                  <th class="py-3 px-4">Projeto</th>
+                  <th class="py-3 px-4">Solicitações</th>
+                  <th class="py-3 px-6 text-right">Impacto Identificado</th>
+                </tr>
+              </thead>
+              <tbody id="auditsHistoryTable" class="divide-y divide-[#F0F2F0] text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. IMPACTO FINANCEIRO -->
+      <section id="view-financial" class="page-view hidden space-y-7">
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-tight text-ink">Impacto Financeiro</h1>
+          <p class="text-sm text-muted mt-1">Mensuração precisa do custo das alterações solicitadas e valor recomendado de aditivo.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div class="card p-4"><p class="text-[11px] text-muted font-medium">Orçamento Original</p><p id="finOrig" class="text-lg font-extrabold text-ink mt-1.5">R$ 0</p></div>
+          <div class="card p-4"><p class="text-[11px] text-muted font-medium">Custo Adicional</p><p id="finExtra" class="text-lg font-extrabold text-red-600 mt-1.5">R$ 0</p></div>
+          <div class="card p-4"><p class="text-[11px] text-muted font-medium">Novo Custo Est.</p><p id="finNew" class="text-lg font-extrabold text-ink mt-1.5">R$ 0</p></div>
+          <div class="card p-4"><p class="text-[11px] text-muted font-medium">Aumento Orçamentário</p><p id="finPct" class="text-lg font-extrabold text-amber-600 mt-1.5">0%</p></div>
+          <div class="card p-4"><p class="text-[11px] text-muted font-medium">Horas Adicionais</p><p id="finHrs" class="text-lg font-extrabold text-ink mt-1.5">0h</p></div>
+          <div class="card p-4 bg-forest-900 text-white border-forest-900"><p class="text-[11px] text-forest-100/80 font-medium">Cobrança Recomendada</p><p id="finRec" class="text-lg font-extrabold mt-1.5">R$ 0</p></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card p-6"><h3 class="text-sm font-bold text-ink mb-4">Evolução dos custos adicionais</h3><div class="h-56"><canvas id="finChartEvolution"></canvas></div></div>
+          <div class="card p-6"><h3 class="text-sm font-bold text-ink mb-4">Orçamento Original vs. Atualizado</h3><div class="h-56"><canvas id="finChartComparison"></canvas></div></div>
+          <div class="card p-6"><h3 class="text-sm font-bold text-ink mb-4">Custo adicional por solicitação</h3><div class="h-56"><canvas id="finChartByReq"></canvas></div></div>
+          <div class="card p-6"><h3 class="text-sm font-bold text-ink mb-4">Distribuição por categoria</h3><div class="h-56"><canvas id="finChartCategory"></canvas></div></div>
+        </div>
+
+        <div class="card overflow-hidden">
+          <div class="p-6 pb-4"><h2 class="text-base font-bold text-ink">Detalhamento Financeiro por Solicitação</h2></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-y border-[#ECEFEC] bg-forest-50/50 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <th class="py-3 px-6">Solicitação</th>
+                  <th class="py-3 px-4">Horas Est.</th>
+                  <th class="py-3 px-4">Custo / Hora</th>
+                  <th class="py-3 px-4">Custo Total Est.</th>
+                  <th class="py-3 px-6 text-right">Valor Recomendado (+15%)</th>
+                </tr>
+              </thead>
+              <tbody id="finTableBody" class="divide-y divide-[#F0F2F0] text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. GESTÃO DE APROVAÇÕES -->
+      <section id="view-approvals" class="page-view hidden space-y-7">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-ink">Aprovações</h1>
+            <p class="text-sm text-muted mt-1">Aprove, recuse ou encaminhe alterações para formalização contratual com histórico auditável.</p>
+          </div>
+          <div class="flex flex-wrap gap-2" id="approvalFilterPills">
+            <button onclick="setApprovalFilter('')" class="app-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-forest-900 text-white">Todas</button>
+            <button onclick="setApprovalFilter('AGUARDANDO')" class="app-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#DCE1DC] text-ink">Aguardando</button>
+            <button onclick="setApprovalFilter('EM_REVISAO')" class="app-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#DCE1DC] text-ink">Em revisão</button>
+            <button onclick="setApprovalFilter('APROVADA')" class="app-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#DCE1DC] text-ink">Aprovadas</button>
+            <button onclick="setApprovalFilter('RECUSADA')" class="app-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#DCE1DC] text-ink">Recusadas</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div id="approvalsList" class="lg:col-span-8 space-y-4"></div>
+          <div class="lg:col-span-4 card p-6 h-fit">
+            <h2 class="text-base font-bold text-ink mb-1">Histórico de Decisões</h2>
+            <p class="text-xs text-muted mb-5">Registro cronológico de governança</p>
+            <div id="decisionLogsList" class="space-y-4"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. INSIGHTS INTELIGENTES DA IA -->
+      <section id="view-insights" class="page-view hidden space-y-6">
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-tight text-ink">Insights da IA</h1>
+          <p class="text-sm text-muted mt-1">Centro de inteligência proativa com recomendações estratégicas baseadas nos seus contratos e reuniões.</p>
+        </div>
+        <div id="insightsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: NOVO PROJETO (COM UPLOAD DE PDF) -->
+  <div id="modal-new-project" class="hidden fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-7">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h2 class="text-xl font-extrabold text-ink">Cadastrar Novo Projeto</h2>
+          <p class="text-xs text-muted">Adicione os dados comerciais e faça upload do contrato original em PDF</p>
+        </div>
+        <button onclick="closeModal('modal-new-project')" class="w-8 h-8 rounded-lg hover:bg-canvas flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form onsubmit="submitNewProject(event)" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-xs font-semibold text-muted mb-1">Nome do Projeto *</label><input id="npName" required placeholder="Ex: Sistema ERP Varejo" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm" /></div>
+          <div><label class="block text-xs font-semibold text-muted mb-1">Nome do Cliente *</label><input id="npClient" required placeholder="Ex: Empresa Beta" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm" /></div>
+          <div><label class="block text-xs font-semibold text-muted mb-1">Data de Início *</label><input id="npStart" type="date" required class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm" /></div>
+          <div><label class="block text-xs font-semibold text-muted mb-1">Prazo de Entrega *</label><input id="npDue" type="date" required class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm" /></div>
+          <div><label class="block text-xs font-semibold text-muted mb-1">Valor Contratado (R$) *</label><input id="npValue" type="number" step="0.01" required placeholder="25000" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm" /></div>
+          <div><label class="block text-xs font-semibold text-muted mb-1">Valor da Hora Técnica (R$) *</label><input id="npRate" type="number" step="0.01" value="120" required class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3.5 py-2.5 text-sm" /></div>
+        </div>
+
+        <label class="block border-2 border-dashed border-[#C7D3CC] hover:border-forest-900 bg-forest-50/40 rounded-xl p-4 text-center cursor-pointer transition">
+          <input id="npFile" type="file" accept=".pdf,.txt" class="hidden" onchange="document.getElementById('npFileLabel').textContent = this.files[0]?.name || 'Upload do Contrato Original (PDF)'" />
+          <p id="npFileLabel" class="text-xs font-semibold text-forest-900">Clique para anexar o Contrato Original em PDF (opcional)</p>
+        </label>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-xs font-semibold text-muted mb-1">Principais Entregas Incluídas</label><textarea id="npIncluded" rows="3" placeholder="- Login e cadastro&#10;- Painel administrativo" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3 py-2 text-xs"></textarea></div>
+          <div><label class="block text-xs font-semibold text-muted mb-1">Itens Explicitamente Excluídos</label><textarea id="npExcluded" rows="3" placeholder="- Integração ERP&#10;- Aplicativo mobile" class="w-full bg-canvas border border-[#DCE1DC] rounded-xl px-3 py-2 text-xs"></textarea></div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" onclick="closeModal('modal-new-project')" class="px-4 py-2.5 rounded-xl bg-canvas text-sm font-semibold text-ink">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-forest-900 hover:bg-forest-950 text-white text-sm font-semibold">Criar Projeto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES DA SOLICITAÇÃO & EVIDÊNCIAS -->
+  <div id="modal-request-detail" class="hidden fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-7">
+      <div class="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <span id="rdMeta" class="text-xs font-semibold text-forest-700"></span>
+          <h2 id="rdTitle" class="text-xl font-extrabold text-ink mt-0.5"></h2>
+        </div>
+        <button onclick="closeModal('modal-request-detail')" class="w-8 h-8 rounded-lg hover:bg-canvas flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div id="rdBody" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: RELATÓRIO DE ALTERAÇÃO (ADITIVO) -->
+  <div id="modal-change-report" class="hidden fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="card w-full max-w-xl p-7 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-extrabold text-ink">Relatório Formal de Alteração (Aditivo)</h2>
+        <button onclick="closeModal('modal-change-report')" class="w-8 h-8 rounded-lg hover:bg-canvas flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <pre id="changeReportText" class="bg-canvas border border-[#E2E6E2] rounded-xl p-4 text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed max-h-80 overflow-y-auto"></pre>
+      <div class="flex justify-end gap-2">
+        <button onclick="copyChangeReport(this)" class="px-4 py-2.5 rounded-xl bg-forest-900 text-white text-xs font-semibold">Copiar Minuta para Envio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURAÇÕES (CALIBRAÇÃO DO SDI) -->
+  <div id="modal-settings" class="hidden fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-extrabold text-ink">Configurações da Plataforma</h2>
+        <button onclick="closeModal('modal-settings')" class="w-8 h-8 rounded-lg hover:bg-canvas flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-xs text-muted">O <strong>Scope Deviation Index (SDI)</strong> é uma métrica configurável. Ajuste os pesos de sensibilidade abaixo conforme a política de risco da sua empresa:</p>
+      <div class="space-y-3 text-xs">
+        <div><label class="flex justify-between font-semibold mb-1"><span>Peso do Impacto Financeiro</span><span id="wFinVal">40%</span></label><input id="wFin" type="range" min="10" max="70" value="40" oninput="document.getElementById('wFinVal').textContent=this.value+'%'" class="w-full accent-forest-900" /></div>
+        <div><label class="flex justify-between font-semibold mb-1"><span>Peso de Horas Adicionais</span><span id="wHrsVal">35%</span></label><input id="wHrs" type="range" min="10" max="70" value="35" oninput="document.getElementById('wHrsVal').textContent=this.value+'%'" class="w-full accent-forest-900" /></div>
+        <div><label class="flex justify-between font-semibold mb-1"><span>Peso de Solicitações Não Formalizadas</span><span id="wUnfVal">25%</span></label><input id="wUnf" type="range" min="5" max="50" value="25" oninput="document.getElementById('wUnfVal').textContent=this.value+'%'" class="w-full accent-forest-900" /></div>
+      </div>
+      <button onclick="closeModal('modal-settings')" class="w-full py-2.5 rounded-xl bg-forest-900 text-white text-xs font-semibold">Salvar Parâmetros</button>
+    </div>
+  </div>
+
+  <!-- MODAL: AJUDA -->
+  <div id="modal-help" class="hidden fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-extrabold text-ink">Como usar o Scopeo</h2>
+        <button onclick="closeModal('modal-help')" class="w-8 h-8 rounded-lg hover:bg-canvas flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <ol class="text-xs text-ink/80 space-y-2 list-decimal pl-4 leading-relaxed">
+        <li>Cadastre seus projetos e anexe o contrato original em <strong>Projetos</strong>.</li>
+        <li>Suba atas ou transcrições na aba <strong>Auditorias</strong> para a IA extrair pedidos e calcular custos.</li>
+        <li>Compare cláusulas na <strong>Análise Contratual</strong> e aprove ou recuse aditivos em <strong>Aprovações</strong>.</li>
+      </ol>
+      <button onclick="closeModal('modal-help')" class="w-full py-2 rounded-xl bg-forest-100 text-forest-900 text-xs font-bold mt-2">Entendido</button>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      currentView: 'dashboard',
+      selectedProjectId: '',
+      projects: [],
+      allRequests: [],
+      approvalFilter: '',
+      charts: {}
+    };
+
+    const BRL = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const esc = s => String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+    function setGreeting() {
+      const h = new Date().getHours();
+      const g = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
+      document.getElementById('greetingText').textContent = `${g}, Flávio`;
+    }
+
+    function riskBadge(level) {
+      if (level === 'ALTO') return `<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200/70"><span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>Alto Risco</span>`;
+      if (level === 'MODERADO') return `<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200/70"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Risco Moderado</span>`;
+      return `<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-forest-100 text-forest-900"><span class="w-1.5 h-1.5 rounded-full bg-forest-700"></span>Baixo Risco</span>`;
+    }
+
+    function classBadge(status, needsReview = 0) {
+      let badge = '';
+      if (status === 'FORA_DO_ESCOPO') badge = `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-700">Fora do escopo</span>`;
+      else if (status === 'ALTERACAO_DE_ESCOPO') badge = `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800">Alteração de escopo</span>`;
+      else badge = `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full bg-forest-100 text-forest-900">Dentro do escopo</span>`;
+      if (needsReview) badge += `<span class="inline-flex items-center whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">Revisão humana</span>`;
+      return `<div class="inline-flex flex-wrap items-center gap-1.5">${badge}</div>`;
+    }
+
+    function approvalBadge(st) {
+      if (st === 'APROVADA') return `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full bg-forest-100 text-forest-900">Aprovada</span>`;
+      if (st === 'RECUSADA') return `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-700">Recusada</span>`;
+      if (st === 'EM_REVISAO') return `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">Em revisão</span>`;
+      return `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800">Aguardando</span>`;
+    }
+
+    function destroyChart(key) {
+      if (state.charts[key]) { state.charts[key].destroy(); delete state.charts[key]; }
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); lucide.createIcons(); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function toggleNotifications() { document.getElementById('notifPopover').classList.toggle('hidden'); }
+
+    async function navigate(view, projectId = null) {
+      if (projectId !== null) {
+        state.selectedProjectId = String(projectId);
+        document.getElementById('globalProjectSelector').value = state.selectedProjectId;
+      }
+      state.currentView = view;
+
+      document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`view-${view}`).classList.remove('hidden');
+
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('nav-active'));
+      const navBtn = document.getElementById(`nav-${view === 'project-detail' ? 'projects' : view}`);
+      if (navBtn) navBtn.classList.add('nav-active');
+
+      const titles = {
+        dashboard: 'Visão Geral da Carteira',
+        projects: 'Carteira de Projetos',
+        'project-detail': 'Dashboard Individual do Projeto',
+        requests: 'Solicitações Identificadas pela IA',
+        audits: 'Auditorias e Documentos',
+        contract: 'Análise Contratual — Matriz de Escopo',
+        financial: 'Impacto Financeiro',
+        approvals: 'Gestão de Aprovações',
+        insights: 'Centro de Insights da IA'
+      };
+      document.getElementById('headerBreadcrumb').textContent = titles[view] || 'Scopeo';
+
+      if (view === 'dashboard') await loadDashboard();
+      if (view === 'projects') await loadProjectsView();
+      if (view === 'project-detail') await loadProjectDetail(state.selectedProjectId || state.projects[0]?.id);
+      if (view === 'contract') await loadContractView(state.selectedProjectId || state.projects[0]?.id);
+      if (view === 'requests') await loadRequestsView();
+      if (view === 'audits') await loadAuditsView();
+      if (view === 'financial') await loadFinancialView();
+      if (view === 'approvals') await loadApprovalsView();
+      if (view === 'insights') await loadInsightsView();
+
+      lucide.createIcons();
+    }
+
+    function onGlobalProjectChange(val) {
+      state.selectedProjectId = val;
+      if (val && state.currentView === 'dashboard') {
+        navigate('project-detail', val);
+      } else {
+        navigate(state.currentView);
+      }
+    }
+
+    function syncProjectSelectors(projects) {
+      state.projects = projects;
+      const globalSel = document.getElementById('globalProjectSelector');
+      const prev = state.selectedProjectId;
+      globalSel.innerHTML = `<option value="">Todos os projetos</option>` +
+        projects.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+      globalSel.value = prev;
+
+      const auditSel = document.getElementById('auditProjectId');
+      if (auditSel) {
+        auditSel.innerHTML = projects.map(p => `<option value="${p.id}">${esc(p.name)} (${esc(p.client_name)})</option>`).join('');
+        if (prev) auditSel.value = prev;
+      }
+    }
+
+    // --- 1. DASHBOARD GERAL ---
+    async function loadDashboard() {
+      const data = await (await fetch('/api/overview')).json();
+      syncProjectSelectors(data.projects);
+
+      document.getElementById('ovActive').textContent = data.kpis.active_projects;
+      document.getElementById('ovRisk').textContent = data.kpis.projects_at_risk;
+      document.getElementById('ovAiReq').textContent = data.kpis.ai_requests_count;
+      document.getElementById('ovImpact').textContent = BRL(data.kpis.accumulated_impact);
+      document.getElementById('ovPending').textContent = data.kpis.pending_approvals;
+
+      const badge = document.getElementById('sidebarPendingBadge');
+      if (data.kpis.pending_approvals > 0) {
+        badge.textContent = data.kpis.pending_approvals;
+        badge.classList.remove('hidden');
+      } else badge.classList.add('hidden');
+
+      // Notificações no sino
+      const riskProjs = data.projects.filter(p => p.metrics.risk_level !== 'BAIXO');
+      document.getElementById('notifList').innerHTML = riskProjs.length
+        ? riskProjs.map(p => `<div onclick="toggleNotifications(); navigate('project-detail', ${p.id})" class="p-2.5 rounded-xl bg-canvas hover:bg-forest-50 cursor-pointer"><p class="font-semibold text-ink">${esc(p.name)}</p><p class="text-muted mt-0.5">SDI ${p.metrics.sdi}/100 • +${BRL(p.metrics.extra_cost)} em desvios</p></div>`).join('')
+        : `<p class="text-muted">Nenhum alerta crítico no momento.</p>`;
+
+      // Gráfico Evolução Financeira
+      destroyChart('ovEvo');
+      const ctx = document.getElementById('overviewEvolutionChart').getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 0, 240);
+      grad.addColorStop(0, 'rgba(6, 75, 53, 0.22)');
+      grad.addColorStop(1, 'rgba(6, 75, 53, 0.0)');
+      state.charts.ovEvo = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.monthly_evolution.labels,
+          datasets: [{
+            label: 'Impacto Financeiro (R$)',
+            data: data.monthly_evolution.values,
+            borderColor: '#064B35',
+            backgroundColor: grad,
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2.5,
+            pointBackgroundColor: '#064B35',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { color: '#F0F2F0' }, ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR') } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+      // Tabela Projetos que precisam de atenção
+      document.getElementById('overviewAttentionTable').innerHTML = data.projects.map(p => `
+        <tr onclick="navigate('project-detail', ${p.id})" class="hover:bg-forest-50/50 cursor-pointer transition">
+          <td class="py-3.5 px-6 font-semibold text-ink">${esc(p.name)}</td>
+          <td class="py-3.5 px-4 text-muted">${esc(p.client_name)}</td>
+          <td class="py-3.5 px-4 font-medium">${BRL(p.contract_value)}</td>
+          <td class="py-3.5 px-4 font-semibold ${p.metrics.extra_cost > 0 ? 'text-red-600' : 'text-ink'}">${BRL(p.metrics.extra_cost)}</td>
+          <td class="py-3.5 px-4">${p.metrics.out_of_scope_count} itens</td>
+          <td class="py-3.5 px-4">
+            <div class="flex items-center gap-2">
+              <div class="w-16 h-1.5 bg-canvas rounded-full overflow-hidden"><div class="h-full bg-forest-900 rounded-full" style="width:${p.metrics.sdi}%"></div></div>
+              <span class="text-xs font-bold text-ink">${p.metrics.sdi}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-6 text-right">${riskBadge(p.metrics.risk_level)}</td>
+        </tr>
+      `).join('');
+
+      // Últimas Atividades
+      document.getElementById('overviewActivities').innerHTML = data.activities.map(a => `
+        <div class="flex items-start gap-3 pb-3 border-b border-[#F2F4F2] last:border-0">
+          <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${a.type === 'audit' ? 'bg-forest-100 text-forest-900' : 'bg-amber-50 text-amber-700'}">
+            <i data-lucide="${a.type === 'audit' ? 'file-check' : 'sparkles'}" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-ink leading-snug">${esc(a.title)}</p>
+            <p class="text-[11px] text-muted mt-0.5">${esc(a.subtitle)}</p>
+            <p class="text-[10px] text-muted/80 mt-0.5">${esc(a.date)}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // --- 2. PROJETOS ---
+    async function loadProjectsView() {
+      const projects = await (await fetch('/api/projects')).json();
+      syncProjectSelectors(projects);
+      document.getElementById('projectsGrid').innerHTML = projects.map(p => `
+        <div onclick="navigate('project-detail', ${p.id})" class="card p-6 hover:border-forest-900/40 cursor-pointer transition flex flex-col justify-between gap-5">
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-canvas text-ink">${esc(p.client_name)}</span>
+              ${riskBadge(p.metrics.risk_level)}
+            </div>
+            <h3 class="text-lg font-extrabold text-ink leading-snug">${esc(p.name)}</h3>
+            <p class="text-xs text-muted mt-1">Início: ${esc(p.start_date)} • Entrega: ${esc(p.due_date)}</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-4 border-t border-[#F0F2F0] text-xs">
+            <div><p class="text-muted">Contrato Original</p><p class="font-bold text-ink text-sm mt-0.5">${BRL(p.contract_value)}</p></div>
+            <div><p class="text-muted">Impacto Adicional</p><p class="font-bold text-red-600 text-sm mt-0.5">+${BRL(p.metrics.extra_cost)}</p></div>
+          </div>
+
+          <div class="flex items-center justify-between pt-3 border-t border-[#F0F2F0] text-xs">
+            <span class="font-medium text-muted">SDI: <strong class="text-ink">${p.metrics.sdi}/100</strong></span>
+            <span class="font-semibold text-forest-900 flex items-center gap-1">Abrir painel <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function submitNewProject(e) {
+      e.preventDefault();
+      const fd = new FormData();
+      fd.append('name', document.getElementById('npName').value);
+      fd.append('client_name', document.getElementById('npClient').value);
+      fd.append('start_date', document.getElementById('npStart').value);
+      fd.append('due_date', document.getElementById('npDue').value);
+      fd.append('contract_value', document.getElementById('npValue').value);
+      fd.append('hourly_rate', document.getElementById('npRate').value);
+      fd.append('scope_included', document.getElementById('npIncluded').value);
+      fd.append('scope_excluded', document.getElementById('npExcluded').value);
+      const file = document.getElementById('npFile').files[0];
+      if (file) fd.append('contract_file', file);
+
+      const res = await fetch('/api/projects', { method: 'POST', body: fd });
+      const data = await res.json();
+      e.target.reset();
+      document.getElementById('npFileLabel').textContent = 'Clique para anexar o Contrato Original em PDF (opcional)';
+      closeModal('modal-new-project');
+      await loadDashboard();
+      navigate('project-detail', data.id);
+    }
+
+    // --- 3. DASHBOARD INDIVIDUAL DO PROJETO ---
+    async function loadProjectDetail(id) {
+      if (!id) return;
+      const data = await (await fetch(`/api/projects/${id}`)).json();
+      const { project: p, metrics: m, items } = data;
+      state.allRequests = items;
+
+      document.getElementById('pdName').textContent = p.name;
+      document.getElementById('pdRiskBadge').innerHTML = riskBadge(m.risk_level);
+      document.getElementById('pdSubtitle').textContent = `${p.client_name} • Prazo contratado: ${p.deadline_days} dias (${p.start_date} a ${p.due_date}) • Taxa: ${BRL(p.hourly_rate)}/h`;
+
+      document.getElementById('pdOriginal').textContent = BRL(p.contract_value);
+      document.getElementById('pdExtra').textContent = '+' + BRL(m.extra_cost);
+      document.getElementById('pdNewTotal').textContent = BRL(m.new_estimated_cost);
+      document.getElementById('pdTotalReq').textContent = m.total_requests;
+      document.getElementById('pdOutReq').textContent = m.out_of_scope_count;
+      document.getElementById('pdPendingReq').textContent = m.pending_count;
+      document.getElementById('pdHours').textContent = `+${m.extra_hours}h`;
+
+      // SDI Gauge
+      document.getElementById('sdiScoreValue').textContent = m.sdi;
+      const circle = document.getElementById('sdiCircle');
+      const offset = 314 - (314 * m.sdi) / 100;
+      circle.style.strokeDashoffset = offset;
+      circle.style.stroke = m.sdi >= 60 ? '#DC2626' : (m.sdi >= 25 ? '#D97706' : '#064B35');
+
+      document.getElementById('sdiOutPct').textContent = `${m.out_of_scope_pct}%`;
+      document.getElementById('sdiBarOut').style.width = `${Math.min(100, m.out_of_scope_pct)}%`;
+      document.getElementById('sdiFinPct').textContent = `+${m.budget_increase_pct}%`;
+      document.getElementById('sdiBarFin').style.width = `${Math.min(100, m.budget_increase_pct * 2)}%`;
+      document.getElementById('sdiHrsPct').textContent = `+${m.hours_increase_pct}%`;
+      document.getElementById('sdiBarHrs').style.width = `${Math.min(100, m.hours_increase_pct * 2)}%`;
+      document.getElementById('sdiUnformalized').textContent = `${m.unformalized_count} itens`;
+
+      // Alertas IA
+      const alertColors = {
+        danger: 'bg-red-50 border-red-200/70 text-red-900',
+        warning: 'bg-amber-50 border-amber-200/70 text-amber-900',
+        info: 'bg-forest-50 border-forest-100 text-ink',
+        success: 'bg-forest-100/70 border-forest-100 text-forest-950'
+      };
+      document.getElementById('pdAlertsList').innerHTML = m.alerts.map(a => `
+        <div class="p-4 rounded-xl border ${alertColors[a.type] || alertColors.info}">
+          <p class="text-sm font-bold">${esc(a.title)}</p>
+          <p class="text-xs opacity-85 mt-1 leading-relaxed">${esc(a.description)}</p>
+        </div>
+      `).join('');
+
+      document.getElementById('pdItemsList').innerHTML = items.length ? items.map(i => `
+        <div onclick="openRequestDetail(${i.id})" class="p-4 rounded-xl border border-[#EAEEEA] hover:border-forest-900/40 cursor-pointer transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold text-sm text-ink">${esc(i.requirement)}</span>
+              ${classBadge(i.status, i.needs_human_review)}
+            </div>
+            <p class="text-xs text-muted line-clamp-1">"${esc(i.evidence_quote)}"</p>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="text-xs font-bold ${i.calculated_cost > 0 ? 'text-red-600' : 'text-muted'}">${i.calculated_cost > 0 ? '+' + BRL(i.calculated_cost) + ' (' + i.estimated_hours + 'h)' : 'Sem custo extra'}</span>
+            ${approvalBadge(i.approval_status)}
+          </div>
+        </div>
+      `).join('') : `<p class="text-sm text-muted">Nenhuma solicitação identificada ainda. Execute uma auditoria para começar.</p>`;
+    }
+
+    // --- 4. ANÁLISE CONTRATUAL ---
+    async function loadContractView(id) {
+      if (!id) return;
+      const data = await (await fetch(`/api/projects/${id}`)).json();
+      const { project: p, items } = data;
+      state.allRequests = items;
+
+      document.getElementById('contractFilenameBadge').textContent = p.contract_filename || 'Contrato_Original.pdf';
+      document.getElementById('cObjectives').textContent = p.scope_objectives;
+      document.getElementById('cDeliverables').textContent = p.scope_deliverables;
+      document.getElementById('cIncluded').textContent = p.scope_included;
+      document.getElementById('cExcluded').textContent = p.scope_excluded;
+      document.getElementById('cDeadlines').textContent = `Início em ${p.start_date} com entrega prevista para ${p.due_date} (${p.deadline_days} dias corridos, esforço base de ${p.estimated_hours}h).`;
+      document.getElementById('cPayment').textContent = p.payment_terms;
+
+      document.getElementById('contractMatrixBody').innerHTML = items.length ? items.map(i => `
+        <tr onclick="openRequestDetail(${i.id})" class="hover:bg-forest-50/50 cursor-pointer transition">
+          <td class="py-3.5 px-6 font-medium text-ink">${esc(i.contracted_item)}</td>
+          <td class="py-3.5 px-4 font-semibold text-forest-900">${esc(i.requirement)}</td>
+          <td class="py-3.5 px-4 text-xs text-muted max-w-xs">${esc(i.contract_excerpt)}</td>
+          <td class="py-3.5 px-4">${classBadge(i.status, i.needs_human_review)}</td>
+          <td class="py-3.5 px-6 text-xs text-ink/80 max-w-xs">${esc(i.justification)}</td>
+        </tr>
+      `).join('') : `<tr><td colspan="5" class="py-8 text-center text-sm text-muted">Nenhuma solicitação comparada ainda para este contrato.</td></tr>`;
+    }
+
+    // --- 5. SOLICITAÇÕES ---
+    async function loadRequestsView() {
+      const q = state.selectedProjectId ? `?project_id=${state.selectedProjectId}` : '';
+      state.allRequests = await (await fetch(`/api/requests${q}`)).json();
+      renderRequestsTable();
+    }
+
+    function renderRequestsTable() {
+      const search = (document.getElementById('reqSearch')?.value || '').toLowerCase();
+      const cls = document.getElementById('reqFilterClass')?.value || '';
+      const app = document.getElementById('reqFilterApproval')?.value || '';
+
+      const filtered = state.allRequests.filter(i => {
+        if (cls && i.status !== cls) return false;
+        if (app && i.approval_status !== app) return false;
+        if (search && !`${i.requirement} ${i.client_name || ''} ${i.project_name || ''}`.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      document.getElementById('requestsTableBody').innerHTML = filtered.length ? filtered.map(i => `
+        <tr onclick="openRequestDetail(${i.id})" class="hover:bg-forest-50/50 cursor-pointer transition">
+          <td class="py-3.5 px-6">
+            <p class="font-semibold text-ink">${esc(i.requirement)}</p>
+            <p class="text-[11px] text-muted mt-0.5">${esc(i.source_type || 'Ata')} • ${esc(i.created_at)}</p>
+          </td>
+          <td class="py-3.5 px-4 text-xs"><p class="font-medium text-ink">${esc(i.project_name || '')}</p><p class="text-muted">${esc(i.client_name || '')}</p></td>
+          <td class="py-3.5 px-4">${classBadge(i.status, i.needs_human_review)}</td>
+          <td class="py-3.5 px-4 text-xs"><p class="font-bold text-ink">${BRL(i.calculated_cost)}</p><p class="text-muted">${i.estimated_hours}h estimadas</p></td>
+          <td class="py-3.5 px-4">
+            <div class="flex items-center gap-2">
+              <div class="w-12 h-1.5 bg-canvas rounded-full overflow-hidden"><div class="h-full bg-forest-700 rounded-full" style="width:${i.confidence}%"></div></div>
+              <span class="text-xs font-semibold text-ink">${i.confidence}%</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-6 text-right">${approvalBadge(i.approval_status)}</td>
+        </tr>
+      `).join('') : `<tr><td colspan="6" class="py-8 text-center text-sm text-muted">Nenhuma solicitação encontrada para os filtros selecionados.</td></tr>`;
+    }
+
+    function openRequestDetail(id) {
+      const item = state.allRequests.find(x => x.id === id);
+      if (!item) return;
+      document.getElementById('rdMeta').textContent = `${item.project_name || 'Projeto'} • ${item.source_type || 'Reunião'} • ${item.created_at}`;
+      document.getElementById('rdTitle').textContent = item.requirement;
+      document.getElementById('rdBody').innerHTML = `
+        <div class="flex flex-wrap items-center gap-2">${classBadge(item.status, item.needs_human_review)} ${approvalBadge(item.approval_status)} <span class="text-xs text-muted ml-auto">Confiança IA: <strong>${item.confidence}%</strong></span></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="p-4 rounded-xl bg-canvas border border-[#E4E8E4]">
+            <p class="text-[11px] font-bold uppercase text-forest-900 mb-1">Trecho do Contrato Original</p>
+            <p class="text-xs text-ink leading-relaxed">${esc(item.contract_excerpt)}</p>
+          </div>
+          <div class="p-4 rounded-xl bg-forest-50 border border-forest-100">
+            <p class="text-[11px] font-bold uppercase text-forest-900 mb-1">Trecho Original da Reunião</p>
+            <p class="text-xs italic text-ink leading-relaxed">"${esc(item.evidence_quote)}"</p>
+          </div>
+        </div>
+        <div class="p-4 rounded-xl border border-[#EAEEEA]">
+          <p class="text-xs font-bold text-ink mb-1">Justificativa da Análise IA</p>
+          <p class="text-xs text-ink/80 leading-relaxed">${esc(item.justification)}</p>
+        </div>
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="p-3 rounded-xl bg-canvas"><p class="text-[11px] text-muted">Horas Extras</p><p class="font-extrabold text-sm text-ink mt-0.5">${item.estimated_hours}h</p></div>
+          <div class="p-3 rounded-xl bg-canvas"><p class="text-[11px] text-muted">Custo Estimado</p><p class="font-extrabold text-sm text-red-600 mt-0.5">${BRL(item.calculated_cost)}</p></div>
+          <div class="p-3 rounded-xl bg-forest-900 text-white"><p class="text-[11px] text-forest-100/80">Cobrança Rec.</p><p class="font-extrabold text-sm mt-0.5">${BRL(item.recommended_charge)}</p></div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-2 pt-3 border-t border-[#ECEFEC]">
+          <button onclick="decideRequest(${item.id}, 'RECUSADA'); closeModal('modal-request-detail')" class="px-3.5 py-2 rounded-xl bg-red-50 text-red-700 text-xs font-bold">Recusar</button>
+          <button onclick="decideRequest(${item.id}, 'EM_REVISAO'); closeModal('modal-request-detail')" class="px-3.5 py-2 rounded-xl bg-canvas text-ink text-xs font-bold">Solicitar Revisão</button>
+          <button onclick="decideRequest(${item.id}, 'APROVADA'); closeModal('modal-request-detail')" class="px-4 py-2 rounded-xl bg-forest-900 text-white text-xs font-bold">Aprovar Alteração</button>
+        </div>
+      `;
+      openModal('modal-request-detail');
+    }
+
+    // --- 6. AUDITORIAS ---
+    async function loadAuditsView() {
+      const q = state.selectedProjectId ? `?project_id=${state.selectedProjectId}` : '';
+      const audits = await (await fetch(`/api/audits${q}`)).json();
+      document.getElementById('auditsHistoryTable').innerHTML = audits.map(a => `
+        <tr class="hover:bg-forest-50/40">
+          <td class="py-3.5 px-6 text-xs text-muted">${esc(a.created_at)}</td>
+          <td class="py-3.5 px-4"><p class="font-semibold text-ink">${esc(a.meeting_title)}</p><p class="text-[11px] text-muted">${esc(a.filename || a.source_type)}</p></td>
+          <td class="py-3.5 px-4 text-xs text-ink">${esc(a.project_name)}</td>
+          <td class="py-3.5 px-4 text-xs font-semibold">${a.items_count} identificadas</td>
+          <td class="py-3.5 px-6 text-right font-bold ${a.extra_cost > 0 ? 'text-red-600' : 'text-forest-900'}">${BRL(a.extra_cost)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function onAuditFileSelected(input) {
+      const file = input.files[0];
+      document.getElementById('auditDropLabel').textContent = file ? `Arquivo selecionado: ${file.name}` : 'Arraste um PDF/TXT ou clique para enviar';
+    }
+
+    function fillDemoAudit() {
+      document.getElementById('auditTitle').value = 'Alinhamento Sprint 4 — Pagamentos e Mobile';
+      document.getElementById('auditTranscript').value =
+        'Cliente: Adoramos o painel administrativo! Para o lançamento do mês que vem, precisamos adicionar um módulo de emissão de nota fiscal eletrônica (NF-e) automático e criar uma versão em aplicativo mobile nativo para iOS e Android. Também queremos ajustar o título da tela inicial.';
+    }
+
+    function setPipelineStep(step) {
+      document.querySelectorAll('.pipeline-step').forEach(el => {
+        const n = Number(el.dataset.step);
+        const dot = el.querySelector('.step-dot');
+        if (n < step) {
+          el.className = 'pipeline-step flex items-center gap-3 text-sm font-semibold text-forest-900';
+          dot.className = 'step-dot w-7 h-7 rounded-full bg-forest-900 text-white flex items-center justify-center text-xs font-bold';
+          dot.textContent = '✓';
+        } else if (n === step) {
+          el.className = 'pipeline-step flex items-center gap-3 text-sm font-bold text-ink';
+          dot.className = 'step-dot w-7 h-7 rounded-full bg-forest-100 border-2 border-forest-900 text-forest-900 flex items-center justify-center text-xs font-bold animate-pulse';
+          dot.textContent = n;
+        } else {
+          el.className = 'pipeline-step flex items-center gap-3 text-sm text-muted';
+          dot.className = 'step-dot w-7 h-7 rounded-full border border-[#D4DCD7] flex items-center justify-center text-xs font-bold';
+          dot.textContent = n;
+        }
+      });
+    }
+
+    async function executeAudit() {
+      const projectId = document.getElementById('auditProjectId').value;
+      const title = document.getElementById('auditTitle').value.trim();
+      const source = document.getElementById('auditSourceType').value;
+      const transcript = document.getElementById('auditTranscript').value.trim();
+      const file = document.getElementById('auditFileInput').files[0];
+      const errBox = document.getElementById('auditErrorBox');
+      const btn = document.getElementById('auditSubmitBtn');
+
+      errBox.classList.add('hidden');
+      if (!title || (!transcript && !file)) {
+        errBox.textContent = 'Informe o título da reunião e anexe um arquivo ou cole a transcrição.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processando auditoria...`;
+      lucide.createIcons();
+
+      let currentStep = 1;
+      setPipelineStep(1);
+      const timer = setInterval(() => {
+        if (currentStep < 5) { currentStep++; setPipelineStep(currentStep); }
+      }, 900);
+
+      try {
+        const fd = new FormData();
+        fd.append('meeting_title', title);
+        fd.append('source_type', source);
+        fd.append('transcript', transcript);
+        if (file) fd.append('file', file);
+
+        const res = await fetch(`/api/projects/${projectId}/audit`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Falha ao processar auditoria');
+
+        clearInterval(timer);
+        setPipelineStep(7);
+
+        const summaryBox = document.getElementById('auditResultSummary');
+        summaryBox.innerHTML = `
+          <p class="text-xs font-bold text-forest-900">Relatório concluído (${esc(data.engine)})</p>
+          <p class="text-xs text-ink/80">As solicitações foram classificadas, o impacto financeiro foi atualizado e os itens foram enviados para a fila de Aprovações.</p>
+          <button onclick="navigate('project-detail', ${projectId})" class="text-xs font-bold text-forest-900 underline">Abrir Dashboard do Projeto →</button>
+        `;
+        summaryBox.classList.remove('hidden');
+        await loadAuditsView();
+      } catch (e) {
+        clearInterval(timer);
+        errBox.textContent = e.message;
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="cpu" class="w-4 h-4"></i> Iniciar Auditoria Inteligente`;
+        lucide.createIcons();
+      }
+    }
+
+    // --- 7. IMPACTO FINANCEIRO ---
+    async function loadFinancialView() {
+      const q = state.selectedProjectId ? `?project_id=${state.selectedProjectId}` : '';
+      const data = await (await fetch(`/api/financial${q}`)).json();
+      const k = data.kpis;
+
+      document.getElementById('finOrig').textContent = BRL(k.original_budget);
+      document.getElementById('finExtra').textContent = '+' + BRL(k.additional_cost);
+      document.getElementById('finNew').textContent = BRL(k.new_estimated_budget);
+      document.getElementById('finPct').textContent = `+${k.increase_pct}%`;
+      document.getElementById('finHrs').textContent = `+${k.extra_hours}h`;
+      document.getElementById('finRec').textContent = BRL(k.recommended_charge);
+
+      ['fEvo', 'fCmp', 'fReq', 'fCat'].forEach(destroyChart);
+
+      state.charts.fEvo = new Chart(document.getElementById('finChartEvolution'), {
+        type: 'line',
+        data: { labels: data.evolution.labels, datasets: [{ data: data.evolution.values, borderColor: '#064B35', backgroundColor: 'rgba(6,75,53,0.12)', fill: true, tension: 0.35 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      state.charts.fCmp = new Chart(document.getElementById('finChartComparison'), {
+        type: 'bar',
+        data: { labels: ['Orçamento Original', 'Orçamento Atualizado'], datasets: [{ data: [k.original_budget, k.new_estimated_budget], backgroundColor: ['#E4F0EA', '#064B35'], borderRadius: 10 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      state.charts.fReq = new Chart(document.getElementById('finChartByReq'), {
+        type: 'bar',
+        data: { labels: data.by_request.map(x => x.label), datasets: [{ data: data.by_request.map(x => x.value), backgroundColor: '#167653', borderRadius: 6 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      state.charts.fCat = new Chart(document.getElementById('finChartCategory'), {
+        type: 'doughnut',
+        data: { labels: data.by_category.map(x => x.label), datasets: [{ data: data.by_category.map(x => x.value), backgroundColor: ['#064B35', '#167653', '#4B9B7B', '#A3CEBC', '#D8E8E0'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+      });
+
+      document.getElementById('finTableBody').innerHTML = data.table.length ? data.table.map(i => `
+        <tr class="hover:bg-forest-50/40">
+          <td class="py-3.5 px-6"><p class="font-semibold text-ink">${esc(i.requirement)}</p><p class="text-[11px] text-muted">${esc(i.project_name)}</p></td>
+          <td class="py-3.5 px-4">${i.estimated_hours}h</td>
+          <td class="py-3.5 px-4 text-muted">${BRL(i.hourly_rate)}/h</td>
+          <td class="py-3.5 px-4 font-semibold text-ink">${BRL(i.calculated_cost)}</td>
+          <td class="py-3.5 px-6 text-right font-extrabold text-forest-900">${BRL(i.recommended_charge)}</td>
+        </tr>
+      `).join('') : `<tr><td colspan="5" class="py-8 text-center text-sm text-muted">Nenhum custo adicional ativo.</td></tr>`;
+    }
+
+    // --- 8. APROVAÇÕES ---
+    async function loadApprovalsView() {
+      const q = state.selectedProjectId ? `?project_id=${state.selectedProjectId}` : '';
+      const data = await (await fetch(`/api/approvals${q}`)).json();
+      state.allRequests = data.items;
+
+      const list = data.items.filter(i => !state.approvalFilter || i.approval_status === state.approvalFilter);
+      document.getElementById('approvalsList').innerHTML = list.length ? list.map(i => `
+        <div class="card p-5 space-y-4">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p class="text-xs text-muted">${esc(i.project_name)} • ${esc(i.client_name)}</p>
+              <h3 class="text-base font-bold text-ink mt-0.5">${esc(i.requirement)}</h3>
+            </div>
+            <div class="flex items-center gap-2">${classBadge(i.status, i.needs_human_review)} ${approvalBadge(i.approval_status)}</div>
+          </div>
+          <p class="text-xs text-ink/80 bg-canvas p-3 rounded-xl">"${esc(i.evidence_quote)}"</p>
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#F0F2F0]">
+            <div class="text-xs">
+              <span class="text-muted">Impacto:</span> <strong class="text-red-600">${BRL(i.calculated_cost)}</strong>
+              <span class="text-muted ml-2">Recomendado:</span> <strong class="text-forest-900">${BRL(i.recommended_charge)}</strong>
+              <span class="text-muted ml-2">(${i.estimated_hours}h)</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="decideRequest(${i.id}, 'APROVADA')" class="px-3 py-1.5 rounded-lg bg-forest-900 hover:bg-forest-950 text-white text-xs font-semibold">Aprovar</button>
+              <button onclick="decideRequest(${i.id}, 'RECUSADA')" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold">Recusar</button>
+              <button onclick="decideRequest(${i.id}, 'EM_REVISAO')" class="px-3 py-1.5 rounded-lg bg-canvas hover:bg-forest-50 text-ink text-xs font-semibold">Revisão IA</button>
+              <button onclick="openChangeReport(${i.id})" class="px-3 py-1.5 rounded-lg border border-[#DCE1DC] text-xs font-semibold text-forest-900">Gerar Relatório</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : `<div class="card p-8 text-center text-sm text-muted">Nenhuma solicitação neste filtro.</div>`;
+
+      document.getElementById('decisionLogsList').innerHTML = data.logs.map(l => `
+        <div class="border-l-2 border-forest-900/30 pl-3 space-y-0.5">
+          <div class="flex items-center justify-between gap-2">${approvalBadge(l.action)}<span class="text-[10px] text-muted">${esc(l.created_at)}</span></div>
+          <p class="text-xs font-semibold text-ink pt-1">${esc(l.requirement)}</p>
+          <p class="text-[11px] text-muted">${esc(l.project_name)}${l.note ? ' — ' + esc(l.note) : ''}</p>
+        </div>
+      `).join('');
+    }
+
+    function setApprovalFilter(st) {
+      state.approvalFilter = st;
+      document.querySelectorAll('.app-pill').forEach(btn => {
+        btn.className = 'app-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#DCE1DC] text-ink';
+      });
+      event.target.className = 'app-pill px-3.5 py-1.5 rounded-full text-xs font-semibold bg-forest-900 text-white';
+      loadApprovalsView();
+    }
+
+    async function decideRequest(id, status) {
+      await fetch(`/api/requests/${id}/decision`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approval_status: status, note: `Status atualizado via painel Scopeo.` })
+      });
+      await navigate(state.currentView);
+    }
+
+    function openChangeReport(id) {
+      const i = state.allRequests.find(x => x.id === id);
+      if (!i) return;
+      document.getElementById('changeReportText').textContent =
+`TERMO DE ALTERAÇÃO DE ESCOPO — SCOPEO
+==================================================
+Projeto: ${i.project_name}
+Cliente: ${i.client_name}
+Data de Referência: ${i.created_at}
+
+1. SOLICITAÇÃO IDENTIFICADA
+${i.requirement}
+
+2. EVIDÊNCIA NA COMUNICAÇÃO (${i.source_type || 'Reunião'})
+"${i.evidence_quote}"
+
+3. FUNDAMENTAÇÃO CONTRATUAL
+${i.contract_excerpt}
+Classificação: ${i.status.replace(/_/g, ' ')}
+Justificativa: ${i.justification}
+
+4. IMPACTO FINANCEIRO E DE PRAZO
+• Esforço adicional estimado: ${i.estimated_hours} horas técnicas
+• Acréscimo no cronograma: +${i.delay_days} dia(s) útil(eis)
+• Custo operacional estimado: ${BRL(i.calculated_cost)}
+• Valor comercial do aditivo: ${BRL(i.recommended_charge)}
+
+Aguardamos o "de acordo" formal para incorporar esta entrega ao backlog do projeto.`;
+      openModal('modal-change-report');
+    }
+
+    function copyChangeReport(btn) {
+      navigator.clipboard.writeText(document.getElementById('changeReportText').textContent);
+      btn.textContent = 'Minuta Copiada!';
+      setTimeout(() => btn.textContent = 'Copiar Minuta para Envio', 1800);
+    }
+
+    // --- 9. INSIGHTS DA IA ---
+    async function loadInsightsView() {
+      const insights = await (await fetch('/api/insights')).json();
+      document.getElementById('insightsGrid').innerHTML = insights.map(ins => `
+        <div class="card p-6 flex flex-col justify-between gap-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-forest-100 text-forest-900 flex items-center justify-center">
+                  <i data-lucide="${esc(ins.icon || 'sparkles')}" class="w-4 h-4"></i>
+                </div>
+                <span class="text-xs font-bold uppercase tracking-wider text-muted">${esc(ins.category)}</span>
+              </div>
+              <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${ins.priority === 'Alta' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'}">Prioridade ${esc(ins.priority)}</span>
+            </div>
+            <h3 class="text-base font-extrabold text-ink">${esc(ins.title)}</h3>
+            <p class="text-sm text-ink/80 leading-relaxed">${esc(ins.description)}</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-forest-50 border border-forest-100 text-xs text-forest-950">
+            <strong class="block mb-0.5 text-forest-900">Recomendação Scopeo AI:</strong>
+            ${esc(ins.recommendation)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    setGreeting();
+    navigate('dashboard');
+  </script>
+</body>
+</html>
